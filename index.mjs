@@ -1,6 +1,8 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import { promisify } from 'node:util';
 import fetch from 'node-fetch';
+import mv from 'mv';
 import parseTorrent from 'parse-torrent';
 import { load } from 'cheerio';
 import filenamify from 'filenamify';
@@ -12,6 +14,8 @@ async function findTorrents(root) {
 
   return torrents;
 }
+
+const move = promisify(mv);
 
 const transformers = [
   {
@@ -25,12 +29,12 @@ const transformers = [
       }
       const response = await fetch(`https://acg.rip/t/${id}`);
       if (!response.ok) {
-        throw new Error(`Response rejected with code:${response.status}`);
+        throw new Error(`Response ${id} rejected with code:${response.status}`);
       }
       const $ = load(await response.text());
       const title = $('.post-show-content .panel-heading').text().trim();
       if (!title) {
-        return null;
+        throw new Error(`Invalid Content`);
       }
       const filename = filenamify(title, { replacement: '-' });
       return `[acgrip][${id}]${filename}.torrent`;
@@ -88,40 +92,42 @@ function isFileMatch(filename, matcher) {
   throw new Error(`Invalid matcher`);
 }
 
-async function run(root, dest, options = {}) {
-  if (!root) {
-    throw new Error(`Param "root" is not defined`);
-  }
-  if (!dest) {
-    throw new Error(`Param "dest" is not defined`);
-  }
-  const { unknownCategory = 'unknown' } = options;
+async function run(
+  root = path.join(process.env.HOME, 'Downloads'),
+  dest = process.env.HOME,
+  options = {}
+) {
+  const { unknownCategory = '[Public][unknown]' } = options;
   const torrents = await findTorrents(root);
   for (const torrent of torrents) {
     for (const transformer of transformers) {
-      if (!isFileMatch(torrent, transform.match)) {
+      if (!isFileMatch(torrent, transformer.match)) {
         continue;
       }
+      const category = transformer.category || unknownCategory;
 
       const transform =
         typeof transformer.transform === 'function'
           ? transformer.transform
           : () => torrent;
 
-      const filename = await transform(torrent, () =>
-        fs.readFile(path.join(root, torrent)).then(parseTorrent)
-      );
+      let filename;
+      try {
+        filename = await transform(torrent, () =>
+          fs.readFile(path.join(root, torrent)).then(parseTorrent)
+        );
+      } catch (e) {
+        console.error(e);
+        break;
+      }
 
-      await fs.rename(
+      await move(
         path.join(root, torrent),
-        path.resolve(dest, transformer.category || unknownCategory, filename)
+        path.resolve(dest, category, filename)
       );
 
       console.log(
-        `move torrent "${torrent}" to "${path.join(
-          transform.category || unknownCategory,
-          filename
-        )}"`
+        `move torrent "${torrent}" to "${path.join(category, filename)}"`
       );
 
       break;
