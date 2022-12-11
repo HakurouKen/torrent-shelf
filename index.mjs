@@ -7,6 +7,7 @@ import parseTorrent from 'parse-torrent';
 import { load } from 'cheerio';
 import filenamify from 'filenamify';
 import minimist from 'minimist';
+import pico from 'picocolors';
 
 async function findTorrents(root) {
   const files = await fs.readdir(root);
@@ -127,7 +128,7 @@ async function run(
       );
 
       console.log(
-        `move torrent "${torrent}" to "${path.join(category, filename)}"`
+        `${pico.green(torrent)} => ${pico.green(path.join(category, filename))}`
       );
 
       break;

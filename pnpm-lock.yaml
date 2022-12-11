@@ -7,6 +7,7 @@ specifiers:
   mv: ^2.1.1
   node-fetch: ^3.3.0
   parse-torrent: ^10.0.1
+  picocolors: ^1.0.0
   prettier: ^2.8.1
 
 dependencies:
@@ -16,6 +17,7 @@ dependencies:
   mv: 2.1.1
   node-fetch: 3.3.0
   parse-torrent: 10.0.1
+  picocolors: 1.0.0
 
 devDependencies:
   prettier: 2.8.1
@@ -304,6 +306,10 @@ packages:
   /path-is-absolute/1.0.1:
     resolution: {integrity: sha1-F0uSaHNVNP+8es5r9TpanhtcX18=}
     engines: {node: '>=0.10.0'}
+    dev: false
+
+  /picocolors/1.0.0:
+    resolution: {integrity: sha512-1fygroTLlHu66zi26VoTDv8yRgm0Fccecssto+MhsZ0D/DGW2sm8E8AjW7NU5VVTRt5GxbeZ5qBuJr+HyLYkjQ==}
     dev: false
 
   /prettier/2.8.1:
