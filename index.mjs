@@ -95,7 +95,7 @@ function isFileMatch(filename, matcher) {
 
 async function run(
   root = path.join(process.env.HOME, 'Downloads'),
-  dest = process.env.HOME,
+  dest = path.join(root, 'torrents'),
   options = {}
 ) {
   const { unknownCategory = '[Public][unknown]' } = options;
@@ -124,7 +124,8 @@ async function run(
 
       await move(
         path.join(root, torrent),
-        path.resolve(dest, category, filename)
+        path.resolve(dest, category, filename),
+        { mkdirp: true }
       );
 
       console.log(
