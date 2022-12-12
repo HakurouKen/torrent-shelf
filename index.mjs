@@ -76,6 +76,10 @@ const transformers = [
   {
     match: '[HAIDAN.VIDEO]',
     category: '[Private][haidan.video]'
+  },
+  {
+    match: '[CarPT]',
+    category: '[Private][carpt.net]'
   }
 ];
 
