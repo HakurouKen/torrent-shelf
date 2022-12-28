@@ -1,4 +1,5 @@
 import path from 'node:path';
+import os from 'node:os';
 import fs from 'node:fs/promises';
 import { promisify } from 'node:util';
 import fetch from 'node-fetch';
@@ -22,7 +23,7 @@ const transformers = [
   {
     match: /^\[acgrip\]/,
     category: '[Public][acg.rip]',
-    transform: async name => {
+    transform: async (name, readTorrent) => {
       const match = name.match(/^\[acgrip\]\s+(\d+?)\./);
       const id = match?.[1];
       if (!id) {
@@ -30,6 +31,11 @@ const transformers = [
       }
       const response = await fetch(`https://acg.rip/t/${id}`);
       if (!response.ok) {
+        if (response.status === 500 || response.status === 404) {
+          // use local torrent data instead
+          const torrent = await readTorrent();
+          return `[acgrip][${id}]${torrent.name}.torrent`;
+        }
         throw new Error(`Response ${id} rejected with code:${response.status}`);
       }
       const $ = load(await response.text());
@@ -98,17 +104,19 @@ function isFileMatch(filename, matcher) {
 }
 
 async function run(
-  root = path.join(process.env.HOME, 'Downloads'),
-  dest = path.join(root, 'torrents'),
+  root = path.join(os.homedir(), 'Downloads'),
+  dest = path.join(os.homedir(), 'torrents'),
   options = {}
 ) {
   const { unknownCategory = '[Public][unknown]' } = options;
   const torrents = await findTorrents(root);
   for (const torrent of torrents) {
+    let matched = false;
     for (const transformer of transformers) {
       if (!isFileMatch(torrent, transformer.match)) {
         continue;
       }
+      matched = true;
       const category = transformer.category || unknownCategory;
 
       const transform =
@@ -137,6 +145,10 @@ async function run(
       );
 
       break;
+    }
+
+    if (!matched) {
+      console.log(pico.bold('ignore:'), torrent);
     }
   }
 }
