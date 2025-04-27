@@ -48,6 +48,19 @@ const transformers = [
     }
   },
   {
+    match: /^\[acgrip\]/,
+    category: '[Public][acg.rip][fallback]',
+    transform: async (name, readTorrent) => {
+      const match = name.match(/^\[acgrip\]\s+(\d+?)\./);
+      const id = match?.[1];
+      if (!id) {
+        return null;
+      }
+      const torrent = await readTorrent();
+      return `[acgrip][${id}]${torrent.name}.torrent`;
+    }
+  },
+  {
     match: /^[a-z0-9]{40}\.torrent$/,
     category: '[Public][dongmanhuayuan.myheartsite.com]',
     transform: async (_, readTorrent) => {
@@ -129,9 +142,12 @@ async function run(
         filename = await transform(torrent, () =>
           fs.readFile(path.join(root, torrent)).then(parseTorrent)
         );
+        if (!filename) {
+          continue;
+        }
       } catch (e) {
         console.error(e);
-        break;
+        continue;
       }
 
       await move(
